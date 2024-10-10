@@ -46,8 +46,8 @@ pinout:
   uio[1]: "opcode[1]"
   uio[2]: "opcode[2]"
   uio[3]: "opcode[3]"
-  uio[4]: ""
-  uio[5]: ""
+  uio[4]: "VPWR"
+  uio[5]: "VGND"
   uio[6]: "carry_out"
   uio[7]: "overflow"
 
