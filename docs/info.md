@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `4-Bit ALU` module is designed to perform various arithmetic and logical operations on 4-bit binary numbers. It supports operations such as addition, subtraction, multiplication, division, and several logical operations. Additionally, it includes an encryption function that can be used to encrypt 4-bit inputs using an 8-bit key. This capstone project is from the MIT BWSI Basics of ASICs class. 
+The `4-Bit ALU` module is designed to perform various arithmetic and logical operations on 4-bit binary numbers. It supports operations such as addition, subtraction, multiplication, division, and several logical operations. Additionally, it includes an encryption function that can be used to encrypt 4-bit inputs using an 8-bit key. 
 
 ## How it Works
 
