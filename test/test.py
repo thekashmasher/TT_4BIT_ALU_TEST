@@ -1,6 +1,7 @@
 import cocotb
 from cocotb.triggers import RisingEdge, Timer
 from cocotb.clock import Clock
+import random
 
 @cocotb.test()
 async def test_tt_um_Richard28277(dut):
@@ -17,70 +18,60 @@ async def test_tt_um_Richard28277(dut):
     await Timer(50, units='ns')
     dut.rst_n.value = 1
 
-    # Helper function to display results
-    def display_result(op_name):
-        print(f"{op_name}: result = {dut.uo_out.value}, uio_out = {dut.uio_out.value}")
+    # Helper function to perform operations
+    def alu_model(a, b, opcode):
+        try:
+            if opcode == 0:  # ADD
+                return (a + b) & 0xF, 0
+            elif opcode == 1:  # SUB
+                return (a - b) & 0xF, 0
+            elif opcode == 2:  # MUL
+                return (a * b) & 0xF, 0
+            elif opcode == 3:  # DIV
+                return (a // b) if b != 0 else 0, 0
+            elif opcode == 4:  # AND
+                return a & b, 0
+            elif opcode == 5:  # OR
+                return a | b, 0
+            elif opcode == 6:  # XOR
+                return a ^ b, 0
+            elif opcode == 7:  # NOT
+                return ~a & 0xF, 0
+            elif opcode == 8:  # ENC (Encryption mock with key 0xAB)
+                return (a ^ 0xAB) & 0xF, 0
+            else:
+                raise ValueError(f"Invalid opcode: {opcode}")
+        except Exception as e:
+            print(f"Error in alu_model: {e}")
+            return 0, 0
 
-    # Test ADD operation
-    dut.ui_in.value = 0b0011_0101  # a = 3, b = 5
-    dut.uio_in.value = 0b0000      # opcode = ADD
-    await Timer(50, units='ns')
-    display_result("ADD")
-    assert dut.uo_out.value == 0b0000_1000  # Expect 8 (0b00001000)
+    # Run 1000 random test cases
+    for test_num in range(1000):
+        # Generate random inputs and operation
+        a = random.randint(0, 15)  # 4-bit random number
+        b = random.randint(0, 15)  # 4-bit random number
+        opcode = random.randint(0, 8)  # Random operation
 
-    # Test SUB operation
-    dut.ui_in.value = 0b0010_0001  # a = 2, b = 1
-    dut.uio_in.value = 0b0001      # opcode = SUB
-    await Timer(50, units='ns')
-    display_result("SUB")
-    assert dut.uo_out.value == 0b0000_0001  # Expect 1 (0b00000001)
+        # Pack inputs into ui_in and set opcode
+        dut.ui_in.value = (a << 4) | b  # Pack a and b into ui_in
+        dut.uio_in.value = opcode  # Set the opcode
 
-    # Test MUL operation
-    dut.ui_in.value = 0b0010_0011  # a = 2, b = 3
-    dut.uio_in.value = 0b0010      # opcode = MUL
-    await Timer(50, units='ns')
-    display_result("MUL")
-    assert dut.uo_out.value == 0b0000_0110  # Expect 6 (0b00000110)
+        # Wait for the operation to complete
+        await Timer(50, units='ns')
 
-    # Test DIV operation
-    dut.ui_in.value = 0b0100_0010  # a = 4, b = 2
-    dut.uio_in.value = 0b0011      # opcode = DIV
-    await Timer(50, units='ns')
-    display_result("DIV")
-    # Expect 4 and 2 (0b0000_0010 0b0000_0100)
-    assert dut.uo_out.value == 0b00000010
+        # Get expected result from the model
+        expected_result, _ = alu_model(a, b, opcode)
 
-    # Test AND operation
-    dut.ui_in.value = 0b0010_0010  # a = 2, b = 2
-    dut.uio_in.value = 0b0100      # opcode = AND
-    await Timer(50, units='ns')
-    display_result("AND")
-    assert dut.uo_out.value == 0b0000_0010  # Expect 2 (0b00000010)
+        try:
+            # Assert that the result matches the expected result
+            assert dut.uo_out.value == expected_result, (
+                f"Test {test_num} failed: a={a}, b={b}, opcode={opcode}. "
+                f"Expected={expected_result}, Got={dut.uo_out.value}"
+            )
+        except AssertionError as error:
+            # Print out any assertion errors during the test
+            print(error)
+            raise
 
-    # Test OR operation
-    dut.ui_in.value = 0b1100_1010  # a = 12, b = 10
-    dut.uio_in.value = 0b0101      # opcode = OR
-    await Timer(50, units='ns')
-    display_result("OR")
-    assert dut.uo_out.value == 0b00001110  # Expect 14 (0b00001110)
-
-    # Test XOR operation
-    dut.ui_in.value = 0b1100_1010  # a = 12, b = 10
-    dut.uio_in.value = 0b0110      # opcode = XOR
-    await Timer(50, units='ns')
-    display_result("XOR")
-    assert dut.uo_out.value == 0b0000_0110  # Expect 6 (0b00000110)
-
-    # Test NOT operation
-    dut.ui_in.value = 0b1100_1010  # a = 12, b = ignored
-    dut.uio_in.value = 0b0111      # opcode = NOT
-    await Timer(50, units='ns')
-    display_result("NOT")
-    assert dut.uo_out.value == 0b00000011  # Expect 101 (0b00100101)
-
-    # Test ENC operation
-    dut.ui_in.value = 0b0010_1100  # a = 2, b = 12
-    dut.uio_in.value = 0b1000      # opcode = ENC
-    await Timer(50, units='ns')
-    display_result("ENC")
-    assert dut.uo_out.value == (0b0010_1100 ^ 0xAB)  # Expect encryption result with key 0xAB
+    # Final success message
+    print("1000 random ALU test cases passed successfully!")
